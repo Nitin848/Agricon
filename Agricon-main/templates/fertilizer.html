@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="eng" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Agricon-Fertilizer</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+
+        <style>
+          html,body{
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+          }
+          body{
+              background-image: url(static/images/fert.jpeg);
+              background-repeat: no-repeat;
+              background-size: cover;
+              text-align: center;
+
+            }
+            h1{
+              font-family: sans-serif;
+            }
+            .form{
+              padding-top: 80px;
+              
+            }
+            .myform{
+              padding-top: 40px;
+              border: 1px solid black;
+              border-radius: 5%;
+              margin-left: 550px;
+              margin-right: 550px;
+            }
+            input{
+              width: 60%;
+            }
+            label{
+              padding-top: 8px;
+            }
+            button{
+            border-radius: 10px;
+            width: 110px;
+            background-color: aliceblue;
+            margin-bottom: 30px;
+
+          }
+
+        </style>
+    </head>
+    <body>
+
+
+        <div class="form" >
+
+          <h1 style="padding-bottom: 30px;">Get informed advice on fertilizer based on soil</h1>
+          <div class="myform">
+            <form method="POST" name="myform"  action="{{ url_for('fertilizer_prediction') }}">
+                <label style="padding-right: 190px;" >Nitrogen</label><br>
+                <input type="number" id="nit2" name="nitrogen" oninput="validatef1()"  placeholder="eg:50" required><br>
+                <div id="res"></div>
+
+                <label style="padding-right: 160px;">Phosphorous</label><br>
+                <input type="number" id="pho2" name="phosphorous" oninput="validatef2()" placeholder="eg:50"  required><br>
+
+                <label style="padding-right: 180px;">Pottasium</label><br>
+                <input type="number" id="pot2" name="pottasium" oninput="validatef3()" placeholder="eg:50"  required><br>
+                <div class="form-group">
+                    <label for="crop" style="padding-right: 90px;" >Crop you want to grow</label><br>
+                    <select
+                      name="cropname"
+                  
+                      id="crop"
+                      placeholder="Select a crop"
+                      style="width: 60%"
+                      required
+                    >
+                      <option selected>Select crop</option>
+                      <option>rice</option>
+                      <option>maize</option>
+                      <option>chickpea</option>
+                      <option>kidneybeans</option>
+                      <option>pigeonpeas</option>
+                      <option>mothbeans</option>
+                      <option>mungbean</option>
+                      <option>blackgram</option>
+                      <option>lentil</option>
+                      <option>pomegranate</option>
+                      <option>banana</option>
+                      <option>mango</option>
+                      <option>grapes</option>
+                      <option>watermelon</option>
+                      <option>muskmelon</option>
+                      <option>apple</option>
+                      <option>orange</option>
+                      <option>papaya</option>
+                      <option>coconut</option>
+                      <option>cotton</option>
+                      <option>jute</option>
+                      <option>coffee</option>
+                    </select>
+                  </div><br>
+                
+                <button type="submit">Predict</button>
+            </form>
+          </div>
+        </div>
+        <script>
+          function validatef1(){
+            var num = document.getElementById('nit2').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of nitrogen between 1 - 100");
+              return false
+            }
+          }
+
+          function validatef2(){
+            var num = document.getElementById('pho2').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of phospharaus between 1 - 100");
+              return false
+            }
+          }
+          function validatef3(){
+            var num = document.getElementById('pot2').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of pottasium between 1 - 100");
+              return false
+            }
+          }
+        </script>
+    </body>
+</html>

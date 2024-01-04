@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="eng" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Agricon</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+        <style>
+            html,body{
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+            }
+            *{
+                padding: 0;
+                margin: 0;
+                text-decoration: none;
+                list-style: none;
+                box-sizing: border-box;
+            }
+            body{
+                font-family: montserrat;
+            }
+            nav{
+                background: rgb(17, 104, 31);
+                height: 70px;
+                width: 100%;
+                position: absolute;
+            }
+            label.logo{
+                color: white;
+                font-size: 40px;
+                line-height: 70px;
+                padding-left: 30px;
+                font-weight: bold;
+                padding-top: 5pxS;
+            }
+            nav ul{
+                float: right;
+                margin-right: 40px;
+            }
+            nav ul li{
+                display: inline-block;
+                line-height: 80px;
+                margin: 15px;
+                margin-top: 0px;
+        
+            }
+            nav ul li a{
+                color: white;
+                text-decoration: none;
+                font-size: 17px;
+                padding: 7px, 13px;                
+                text-transform: uppercase;
+                position: relative;
+            }
+            nav ul li a:before{
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: -20%;
+                width: 0;
+                height: 2px;
+                background-color: rgb(235, 88, 8);
+                transition: .5s ease;
+
+            }
+            nav ul li a:hover:before{
+                width: 100%;
+            }
+            img{
+                background-size: cover;
+               
+            }
+            section{
+                height: 450px;
+                position: relative;
+                background-color: antiquewhite;
+            }
+            .im{
+              background-image: url(static/images/3.jpg);
+              background-repeat: no-repeat;
+              background-size: cover;
+              width: 100%;
+              height: 100%;
+
+            }
+            .head{
+                padding-top:80px;
+                text-align: center;
+                font: 1em sans-serif;
+                
+            }
+            .card-title{
+                font-weight: bold;
+            }
+            a{
+              text-decoration: none;
+              color: black;
+            }
+
+            .text{
+            color: red;
+            text-align: center;
+            padding-top: 150px;
+            color: white;
+            font-size: 30px;
+            margin: 40px;
+            
+          }
+
+
+            
+       
+
+            
+          </style>
+    </head>
+    <body>
+        <nav>
+            <label class="logo">Agricon</label>
+            <ul>
+                <li><a class="active" href="#">Home</a></li>
+                <li><a href="{{url_for('crop_recommend')}}">Crop</a></li>
+                <li><a href="{{url_for('fertilizer_recommend')}}">Fertilizer</a></li>
+                <li><a href="{{ url_for('disease_prediction_result') }}">Crop Disease</a></li>
+                <!--<li><a href="#">Crop Disease</a></li>-->
+            </ul>
+        </nav>
+
+          
+        <div class="im">
+            
+          <div class="text" >
+            <p class="para">Get Informed decision about your farming strategy.</p><br>
+            <p class="para">Here are some questions we'll answer.</p><br>
+            <p style="font-size: 20px;">
+              1.What crop to plant in your soil?<br><br>
+              2.What are the fertilizers to be used?<br><br>
+              3.Which disease your crop have<br><br>
+              4.Precautions to cure that disease<br>
+            </p>
+          </div>
+
+      </div>
+        <!--
+        <div class="im">
+            <img src="static/images/3.jpg">
+        </div>-->
+
+        <!--<section></section>-->
+
+       
+        <div class="head"><h1>Our Services</h1></div>
+        <div class="row row-cols-1 row-cols-md-3 g-4" style="margin: 80px; cursor: pointer;">
+            <div class="col" onclick="">
+              <div class="card h-100" style="padding:10px">
+                  <a href="{{url_for('crop_recommend')}}">
+                    <img src="static/images/3.jpg" class="card-img-top"
+                      alt="Skyscrapers" />
+                    <div class="card-body" >
+                      <h5 class="card-title" >Crop</h5>
+                      <p class="card-text">
+                        Recommendation about the type of crops to be cultivated which is best suited
+							          for the respective conditions
+                      </p>
+                    </div>
+                  </a>
+                <!--<div class="card-footer">
+                  <small class="text-muted">Last updated 3 mins ago</small>
+                </div>-->
+              </div>
+            </div>
+            <div class="col">
+                <div class="card h-100" style="padding:10px">
+
+                    <a href="{{url_for('fertilizer_recommend')}}">
+                    <img src="static/images/1.jpg" class="card-img-top"
+                        alt="Los Angeles Skyscrapers" />
+                    <div class="card-body">
+                        <h5 class="card-title">Fertilizer</h5>
+                        <p class="card-text">Recommendation about the type of fertilizer best suited for the particular soil
+                    and the recommended crop
+                        </p>
+                    </div>
+                    </a>
+                <!--<div class="card-footer">
+                  <small class="text-muted">Last update d 3 mins ago</small>
+                </div>-->
+                </div>
+            </div>
+            <div class="col">
+              <div class="card h-100" style="padding:10px">
+              <a href="{{url_for('disease_prediction')}}">
+                <img src="static/images/2.jpg" class="card-img-top"
+                  alt="Palm Springs Road" />
+                <div class="card-body">
+                  <h5 class="card-title">Diseases</h5>
+                  <p class="card-text">
+                    Predicting the name and causes of crop disease and suggestions to cure it
+                  </p>
+                </div>
+              </a>
+                <!--<div class="card-footer">
+                  <small class="text-muted">Last updated 3 mins ago</small>
+                </div>-->
+              </div>
+            </div>
+          </div>
+        <script>
+            function website(){
+                window.open("card.html")
+            }
+        </script>
+        
+</body>
+
+</html>

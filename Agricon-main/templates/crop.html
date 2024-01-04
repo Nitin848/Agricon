@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="eng" dir="ltr">
+    <head>
+        <meta charset="utf-8">
+        <title>Agricon-Crop</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+        <script src="/static/scripts/cities.js"></script>
+        <style>
+          html,body{
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+          }
+          body{
+              background-image: url(static/images/farm_background.jpg);
+              background-repeat: no-repeat;
+              background-size: cover;
+              text-align: center;
+
+            }
+          .back{
+            padding-top: 30px;
+          }
+          h1{
+            padding-bottom: 30px;
+          }
+          .form{
+              padding-top: 30px;
+              margin-left: 550px;
+              margin-right: 550px;
+              padding-bottom: 40px;
+              
+            }
+          .form{
+            border: 1px solid rgb(55, 188, 50);
+            border-radius: 5%;
+          }
+          input{
+            width: 60%;
+            
+          }
+          label{
+            padding-top: 8px;
+          }
+          button{
+            border-radius: 10px;
+            width: 110px;
+            background-color: white;
+
+          }
+        
+
+          
+        </style>
+    </head>
+    <body>
+        <div class="back">
+            <h1>Find out the most suitable crop to grow in your farm</h1>
+            <div class="form" >
+                <form method="POST" name="myform"  action="{{ url_for('crop_prediction') }}">
+                    <label style="padding-right: 190px;" >Nitrogen</label><br>
+                    <input type="number" id="nit" name="nitrogen" oninput="validate()"  placeholder="eg:50" required><br>
+                    <div id="res"></div>
+
+                    <label style="padding-right: 160px;">Phosphorous</label><br>
+                    <input type="number" id="pho" name="phosphorous" oninput="validate2()" placeholder="eg:50"  required><br>
+
+                    <label style="padding-right: 180px;">Pottasium</label><br>
+                    <input type="number" id="pot" name="pottasium" oninput="validate3()" placeholder="eg:50"  required><br>
+
+                    <label style="padding-right: 200px;">ph level</label><br>
+                    <input type="number" id="ph" name="ph" oninput="validate4()" placeholder="eg:7"  required><br>
+
+                    <label style="padding-right: 200px;">Rainfall </label><br>
+                    <input type="number" id="rain" name="rainfall" oninput="validate5()" placeholder="eg:50"  required><br>
+                    
+                    <label for="State" style="font-size: 17px; padding-right: 220px;">State</label><br>
+                    <select style="width: 60%;"
+                      onchange="print_city('state', this.selectedIndex);"
+                      id="sts"
+                      name="stt"
+                      placeholder="state"
+                      style="font-weight: bold; color: black;"
+                      required><option value="" disabled selected hidden>Choose a State</option>
+                    </select><br>
+                    
+                    <label  style="font-size: 17px; padding-right: 230px;">City</label><br>
+                    <select style="width: 60%;"
+                      id="state"
+                      name="city"
+                      style="font-weight: bold; color: black;"
+                      required>
+                      <option value="" disabled selected hidden>Choose a District</option></select><br>
+                    <script language="javascript">
+                      print_state("sts");
+                    </script><br>
+                    <button type="submit">Predict</button>
+                </form>
+            </div>
+        </div>
+        <script>
+          function validate(){
+            var num = document.getElementById('nit').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of nitrogen between 1 - 100");
+              return false
+            }
+          }
+
+          function validate2(){
+            var num = document.getElementById('pho').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of phospharaus between 1 - 100");
+              return false
+            }
+          }
+          function validate3(){
+            var num = document.getElementById('pot').value;
+            
+            if(num>0 && num<100){
+              return true;
+            }else{
+              window.alert("Enter the value of pottasium between 1 - 100");
+              return false
+            }
+          }
+          function validate4(){
+            var num = document.getElementById('ph').value;
+            
+            if(num>0 && num<15){
+              return true;
+            }else{
+              window.alert("Enter the value of ph between 1 - 14");
+              return false
+            }
+          }
+          function validate5(){
+            var num = document.getElementById('rain').value;
+            
+            if(num>0 && num<200){
+              return true;
+            }else{
+              window.alert("Enter the value of Rainfall between 1 - 200");
+              return false
+            }
+          }
+        </script>
+        
+    </body>
+</html>
