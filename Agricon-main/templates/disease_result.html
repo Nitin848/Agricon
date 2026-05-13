@@ -50,7 +50,9 @@
             <h2> Precautions : {{ disease_precautions }}</h2>
         {% endif %}
 
-
+        {% if cond == 3 %}
+            <h1>{{ error_msg }}</h1>
+        {% endif %}
     </div>
     </body>
 </html>

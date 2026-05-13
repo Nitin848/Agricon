@@ -1,27 +1,61 @@
-import numpy as np
-#import streamlit as st
-import cv2
-from PIL import Image
-import tensorflow as tf
-import pandas as pd
 import os
-from tensorflow.keras.models import load_model
+import pickle
 
-from flask import Flask, render_template, request, Markup
+import cv2
 import numpy as np
 import pandas as pd
-from werkzeug.utils import redirect
-
-#from utils.disease import disease_dic
-#from utils.fertilizer import fertilizer_dic
 import requests
+from flask import Flask, jsonify, render_template, request
+from markupsafe import Markup
+from werkzeug.utils import secure_filename
+
 import config
-import pickle
-import io
-
-
 
 app = Flask(__name__)
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "Data")
+MODELS_DIR = os.path.join(BASE_DIR, "models")
+UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
+
+# Crop recommender: any sklearn-like estimator with .predict on [N,P,K,temp,humidity,ph,rainfall].
+# Priority: AGRICON_CROP_MODEL env (filename), then RandomForest.pkl, DecisionTree.pkl, NBClassifier.pkl.
+_CROP_MODEL_CANDIDATES = ("RandomForest.pkl", "DecisionTree.pkl", "NBClassifier.pkl")
+_crop_model_path = None
+crop_recommendation_model = None
+
+_override = os.environ.get("AGRICON_CROP_MODEL", "").strip()
+if _override:
+    _path = os.path.join(MODELS_DIR, _override)
+    if os.path.isfile(_path):
+        _crop_model_path = _path
+if _crop_model_path is None:
+    for _name in _CROP_MODEL_CANDIDATES:
+        _path = os.path.join(MODELS_DIR, _name)
+        if os.path.isfile(_path):
+            _crop_model_path = _path
+            break
+if _crop_model_path is not None:
+    with open(_crop_model_path, "rb") as f:
+        crop_recommendation_model = pickle.load(f)
+
+_plant_status_model = None
+_leaf_id_model = None
+
+_tf_module = None
+
+
+def get_tf():
+    """Import TensorFlow only when disease routes run (smaller memory at boot for PaaS)."""
+    global _tf_module
+    if _tf_module is None:
+        import tensorflow as tf  # noqa: PLC0415
+
+        _tf_module = tf
+    return _tf_module
 
 
 fertilizer_dic = {
@@ -120,6 +154,7 @@ fertilizer_dic = {
 
 
 def load_and_prep_image(filename, img_shape=224):
+    tf = get_tf()
     img = tf.io.read_file(filename)
     img = tf.image.decode_image(img, channels=3)
     img = tf.image.resize(img, size=[img_shape, img_shape])
@@ -128,6 +163,7 @@ def load_and_prep_image(filename, img_shape=224):
 
 
 def pred_and_plot(model, filename, class_names):
+    tf = get_tf()
     img = load_and_prep_image(filename)
     pred = model.predict(tf.expand_dims(img, axis=0))
     if len(pred[0]) > 1:
@@ -138,10 +174,13 @@ def pred_and_plot(model, filename, class_names):
 
 def resize_image(file_name):
     image = cv2.imread(file_name)
+    if image is None:
+        return
     img = cv2.resize(image, (224, 224))
     cv2.imwrite(file_name, img)
 
 def diseases_prediction(file_name, model, class_names):
+    tf = get_tf()
     image = tf.keras.preprocessing.image.load_img(file_name)
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])  # Convert single image to a batch.
@@ -157,60 +196,78 @@ def diseases_prediction(file_name, model, class_names):
 
 def prediction(plant_name, file_name):
     resize_image(file_name)
-    if plant_name == "Apple":
-        Apple_model = tf.keras.models.load_model("Data/Apple_model1.h5")
-        Apple_diseases = ['Apple_scab', 'Black_rot', 'Cedar_apple_rust']
-        diseases = diseases_prediction(file_name, Apple_model, Apple_diseases)
-        return diseases
+    plant_specs = {
+        "Apple": ("Apple_model1.h5", ["Apple_scab", "Black_rot", "Cedar_apple_rust"]),
+        "Grape": (
+            "Grapes_model1.h5",
+            ["Black_rot", "Esca_(Black_Measles)", "Leaf_blight_(Isariopsis_Leaf_Spot)"],
+        ),
+        "Tomato": (
+            "tomato_model1.h5",
+            [
+                "Bacterial_spot",
+                "Early_blight",
+                "Late_blight",
+                "Leaf_Mold",
+                "Septoria_leaf_spot",
+                "Spider_mites_Two_spotted_spider_mite",
+                "Target_Spot",
+                "YellowLeaf__Curl_Virus",
+                "mosaic_virus",
+            ],
+        ),
+        "Corn": (
+            "corn_model1.h5",
+            ["Cercospora_leaf_spot Gray_leaf_spot", "Common_rust", "Northern_Leaf_Blight"],
+        ),
+        "Potato": ("potato_model2.h5", ["Potato___Early_blight", "Potato___Late_blight"]),
+    }
+    if plant_name not in plant_specs:
+        return "Diseases are not trained for this Plant"
+    fname, disease_labels = plant_specs[plant_name]
+    mpath = os.path.join(DATA_DIR, fname)
+    if not os.path.isfile(mpath):
+        return None
+    tf = get_tf()
+    plant_model = tf.keras.models.load_model(mpath)
+    return diseases_prediction(file_name, plant_model, disease_labels)
 
-    elif plant_name == "Grape":
-        Grape_model = tf.keras.models.load_model("Data/Grapes_model1.h5")
-        Grape_diseases = ['Black_rot', 'Esca_(Black_Measles)', 'Leaf_blight_(Isariopsis_Leaf_Spot)']
-        diseases = diseases_prediction(file_name, Grape_model, Grape_diseases)
-        return diseases
-    elif plant_name == "Tomato":
-        Tomato_model = tf.keras.models.load_model("Data/tomato_model1.h5")
-        Tomato_diseases = ['Bacterial_spot', 'Early_blight', 'Late_blight', 'Leaf_Mold', 'Septoria_leaf_spot',
-                           'Spider_mites_Two_spotted_spider_mite', 'Target_Spot', 'YellowLeaf__Curl_Virus',
-                           'mosaic_virus']
-        diseases = diseases_prediction(file_name, Tomato_model, Tomato_diseases)
-        return diseases
-    elif plant_name == "Corn":
-        Corn_model = tf.keras.models.load_model("Data/corn_model1.h5")
-        Corn_diseases = ['Cercospora_leaf_spot Gray_leaf_spot', 'Common_rust', 'Northern_Leaf_Blight']
-        diseases = diseases_prediction(file_name, Corn_model, Corn_diseases)
-        return diseases
-    elif plant_name == "Potato":
-        Potato_model = tf.keras.models.load_model("Data/potato_model2.h5")
-        Potato_diseases = ['Potato___Early_blight', 'Potato___Late_blight']
-        diseases = diseases_prediction(file_name, Potato_model, Potato_diseases)
-        return diseases
-    else:
-       diseases = "Diseases are not trained for this Plant"
-#      return "Diseases are not trained for this Plant"
 
-
-class_names21 = pd.read_csv("Data/21_classnames.csv")
+class_names21 = pd.read_csv(os.path.join(DATA_DIR, "21_classnames.csv"))
 class_names_21 = list(class_names21["21_classnames"])
 class_names2 = ["Healthy", "Unhealthy"]
-diseases_preventation = pd.read_csv("Data/diseases preventation.csv")
-
-model = tf.keras.models.load_model("Data/plant_status_model1.h5")
-model1 = tf.keras.models.load_model("Data/Plant_Leaf_identification_model1.h5")
-path='C:/Users/sunil kumar/OneDrive/Desktop/New folder (5)/disease detection/plant.png'
+diseases_preventation = pd.read_csv(os.path.join(DATA_DIR, "diseases preventation.csv"))
 
 
+def get_leaf_and_status_models():
+    global _plant_status_model, _leaf_id_model
+    status_path = os.path.join(DATA_DIR, "plant_status_model1.h5")
+    leaf_path = os.path.join(DATA_DIR, "Plant_Leaf_identification_model1.h5")
+    if not os.path.isfile(status_path) or not os.path.isfile(leaf_path):
+        return None, None
+    tf = get_tf()
+    if _plant_status_model is None:
+        _plant_status_model = tf.keras.models.load_model(status_path)
+    if _leaf_id_model is None:
+        _leaf_id_model = tf.keras.models.load_model(leaf_path)
+    return _plant_status_model, _leaf_id_model
 
 
 
 
+@app.route('/health')
+def health():
+    """Uptime check for hosting platforms (Render, Railway, etc.)."""
+    return jsonify(
+        status='ok',
+        crop_model_loaded=crop_recommendation_model is not None,
+    )
 
-crop_recommendation_model_path = 'models/RandomForest.pkl'
-crop_recommendation_model = pickle.load(open(crop_recommendation_model_path, 'rb'))
 
 @app.route('/')
 def home():
     return render_template('index.html')
+
 
 @app.route('/crop_recommend')
 def crop_recommend():
@@ -218,34 +275,45 @@ def crop_recommend():
 
 @app.route('/crop_predict', methods=['POST'])
 def crop_prediction():
-    if request.method == 'POST':
-        N = int(request.form['nitrogen'])
-        P = int(request.form['phosphorous'])
-        K = int(request.form['pottasium'])
-        ph = float(request.form['ph'])
-        rainfall = float(request.form['rainfall'])
-        city_name = request.form.get("city")
+    if request.method != 'POST':
+        return render_template('crop.html')
+    if crop_recommendation_model is None:
+        return render_template(
+            'crop_result.html',
+            prediction_text=(
+                "Crop model missing. Place one of RandomForest.pkl, DecisionTree.pkl, or "
+                "NBClassifier.pkl under models/, or run: python train_crop_model.py "
+                "(writes models/RandomForest.pkl). Optional: set AGRICON_CROP_MODEL to choose "
+                "which filename to load."
+            ),
+        )
+    N = int(request.form['nitrogen'])
+    P = int(request.form['phosphorous'])
+    K = int(request.form['pottasium'])
+    ph = float(request.form['ph'])
+    rainfall = float(request.form['rainfall'])
+    city_name = (request.form.get("city") or "").strip()
 
-
-        api_key = "9d7cde1f6d07ec55650544be1631307e"
-        base_url = "http://api.openweathermap.org/data/2.5/weather?"
+    api_key = os.environ.get("OPENWEATHER_API_KEY", getattr(config, "weather_api_key", ""))
+    current_temperature = 25.0
+    current_humidity = 70.0
+    if city_name and api_key:
+        base_url = "https://api.openweathermap.org/data/2.5/weather?"
         complete_url = base_url + "appid=" + api_key + "&q=" + city_name
-        response = requests.get(complete_url)
-        x = response.json()
-        if x["cod"] != "404":
+        try:
+            response = requests.get(complete_url, timeout=10)
+            x = response.json()
+        except (requests.RequestException, ValueError):
+            x = {"cod": "404"}
+        if str(x.get("cod")) != "404" and "main" in x:
             y = x["main"]
-            current_temperature = y["temp"] - 273.15
-            current_pressure = y["pressure"]
-            current_humidity = y["humidity"]
-            z = x["weather"]
-            weather_description = z[0]["description"]
-        #current_temperature=24
-        #current_humidity=37
-        data = np.array([[N, P, K, current_temperature, current_humidity, ph, rainfall]])
-        my_prediction = crop_recommendation_model.predict(data)
-        final_prediction = my_prediction[0]
+            current_temperature = float(y["temp"]) - 273.15
+            current_humidity = float(y["humidity"])
 
-    return render_template('crop_result.html',prediction_text=final_prediction)
+    data = np.array([[N, P, K, current_temperature, current_humidity, ph, rainfall]])
+    my_prediction = crop_recommendation_model.predict(data)
+    final_prediction = my_prediction[0]
+    return render_template('crop_result.html', prediction_text=final_prediction)
 
 @app.route('/fertilizer_recommend')
 def fertilizer_recommend():
@@ -253,17 +321,24 @@ def fertilizer_recommend():
 
 @app.route('/fertilizer_predict', methods=['POST'])
 def fertilizer_prediction():
-    if request.method=='POST':
+    response = Markup("")
+    if request.method == 'POST':
         crop_name = str(request.form['cropname'])
         N = int(request.form['nitrogen'])
         P = int(request.form['phosphorous'])
         K = int(request.form['pottasium'])
 
-        df = pd.read_csv('Data/fertilizer.csv')
+        df = pd.read_csv(os.path.join(DATA_DIR, 'fertilizer.csv'))
+        row = df[df['Crop'] == crop_name]
+        if row.empty:
+            response = Markup(
+                "<p>Unknown crop. Pick a crop from the list or check spelling.</p>"
+            )
+            return render_template('fertilizer_result.html', prediction_result=response)
 
-        nr = df[df['Crop'] == crop_name]['N'].iloc[0]
-        pr = df[df['Crop'] == crop_name]['P'].iloc[0]
-        kr = df[df['Crop'] == crop_name]['K'].iloc[0]
+        nr = row['N'].iloc[0]
+        pr = row['P'].iloc[0]
+        kr = row['K'].iloc[0]
 
         n = nr - N
         p = pr - P
@@ -289,40 +364,94 @@ def fertilizer_prediction():
 
     return render_template('fertilizer_result.html',prediction_result=response)
 
-@app.route('/disease_prediction')
+@app.route('/disease_prediction', methods=['GET', 'POST'])
 def disease_prediction():
-    return render_template('disease.html')
+    if request.method == 'GET':
+        return render_template('disease.html')
 
-@app.route('/disease_prediction',methods=['GET','POST'])
-def disease_prediction_result():
-    if request.method == 'POST':
-        file = request.files['file1']
-        image_file = file.filename
-        file_path = os.path.join('C:/Users/sunil kumar/OneDrive/Desktop/New folder (5)/disease detection/temp/',image_file)
-        #file.save(file_path)
-        plant_name = pred_and_plot(model1, file_path, class_names_21)
-        plant_status = pred_and_plot(model, file_path, class_names2)
+    file = request.files.get('file1')
+    if not file or file.filename == '':
+        return render_template(
+            'disease_result.html',
+            cond=3,
+            error_msg='Please choose an image file.',
+        )
 
-        if plant_status == "Healthy":
-            info = "There is no need to spray pesticides on the leaf because it is healthy."
-            return render_template('disease_result.html',cond=0, plant=plant_name, status=plant_status, diseases_name=info)
-        else:
-            diseases = prediction(plant_name, file_path)
-            if diseases == None:
-                diseases_info="Diseases are not trained for this Plant"
-                return render_template('disease_result.html',cond=1, plant=plant_name, status=plant_status, diseases_name=diseases_info)
+    model_status, model_leaf = get_leaf_and_status_models()
+    if model_status is None or model_leaf is None:
+        return render_template(
+            'disease_result.html',
+            cond=3,
+            error_msg=(
+                'Disease prediction models (.h5 files) are not in the Data/ folder. '
+                'Add plant_status_model1.h5 and Plant_Leaf_identification_model1.h5 to run this feature.'
+            ),
+        )
 
-            else:
-                disease = str(diseases)
-                index_value = diseases_preventation.Diseases_Name[diseases_preventation.Diseases_Name == str(diseases)].index.tolist()
-                precaution = diseases_preventation.iloc[index_value[0]]["Precautions"]
-#               return render_template('disease.html', plant=plant_name, status=plant_status, diseases_name=disease,disease_precautions=precaution)
-                return render_template('disease_result.html',cond=2,plant=plant_name,status=plant_status, diseases_name=disease,disease_precautions=precaution)
+    filename = secure_filename(file.filename)
+    file_path = os.path.join(UPLOAD_DIR, filename)
+    file.save(file_path)
 
+    plant_name = pred_and_plot(model_leaf, file_path, class_names_21)
+    plant_status = pred_and_plot(model_status, file_path, class_names2)
 
+    if plant_status == "Healthy":
+        info = "There is no need to spray pesticides on the leaf because it is healthy."
+        return render_template(
+            'disease_result.html',
+            cond=0,
+            plant=plant_name,
+            status=plant_status,
+            diseases_name=info,
+        )
+
+    diseases = prediction(plant_name, file_path)
+    if diseases is None:
+        return render_template(
+            'disease_result.html',
+            cond=1,
+            plant=plant_name,
+            status=plant_status,
+            diseases_name='Disease model for this plant is not installed in Data/.',
+        )
+
+    if diseases == "Diseases are not trained for this Plant":
+        return render_template(
+            'disease_result.html',
+            cond=1,
+            plant=plant_name,
+            status=plant_status,
+            diseases_name=diseases,
+        )
+
+    disease = str(diseases)
+    matches = diseases_preventation[
+        diseases_preventation.Diseases_Name == disease
+    ].index.tolist()
+    if not matches:
+        return render_template(
+            'disease_result.html',
+            cond=2,
+            plant=plant_name,
+            status=plant_status,
+            diseases_name=disease,
+            disease_precautions='No precautions listed for this label in the dataset.',
+        )
+
+    precaution = diseases_preventation.iloc[matches[0]]["Precautions"]
+    return render_template(
+        'disease_result.html',
+        cond=2,
+        plant=plant_name,
+        status=plant_status,
+        diseases_name=disease,
+        disease_precautions=precaution,
+    )
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    port = int(os.environ.get('PORT', '5000'))
+    debug = os.environ.get('FLASK_DEBUG', '').lower() in ('1', 'true', 'yes')
+    app.run(debug=debug, host='0.0.0.0', port=port)
 
 
 
