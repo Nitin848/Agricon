@@ -122,10 +122,11 @@
         <nav>
             <label class="logo">Agricon</label>
             <ul>
-                <li><a class="active" href="#">Home</a></li>
+                <li><a class="active" href="{{ url_for('home') }}">Home</a></li>
                 <li><a href="{{url_for('crop_recommend')}}">Crop</a></li>
-                <li><a href="{{url_for('fertilizer_recommend')}}">Fertilizer</a></li>
+                <li><a href="{{ url_for('fertilizer_recommend') }}">Fertilizer</a></li>
                 <li><a href="{{ url_for('disease_prediction') }}">Crop Disease</a></li>
+                <li><a href="{{ url_for('services') }}">Services</a></li>
                 <!--<li><a href="#">Crop Disease</a></li>-->
             </ul>
         </nav>
@@ -211,7 +212,7 @@
           </div>
         <script>
             function website(){
-                window.open("card.html")
+                window.open("{{ url_for('services') }}", "_blank");
             }
         </script>
         

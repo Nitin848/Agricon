@@ -1,58 +1,123 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Agricon</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
-        <script src="/static/scripts/cities.js"></script>
-        <style>
-            html,body{
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                overflow-x: hidden;
-          }
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Agricon - Disease Result</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
 
-             body{
-              background-color:aliceblue;
+      body {
+        background: radial-gradient(circle at top left, #e8f5ff 0, #f3fbff 40%, #eef6ff 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: "Segoe UI", Arial, sans-serif;
+        color: #10211e;
+      }
 
-            }
-            .result{
-                text-align: center;
-                padding-top: 200px;
-                font-family: sans-serif;
-                color: black;
-                font-size: 10px;
-            }
-        </style>
-    </head>
-    <body>
-    <div class="result">
-       {% if cond == 0 %}
-        <h1> Plant Name : {{ plant }}</h1>
-        <h1> Plant Status :  {{ status }}</h1>
-        <h1> {{ diseases_name }}</h1>
+      .result-card {
+        width: 100%;
+        max-width: 780px;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid #dde7ea;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.15);
+        padding: 24px 22px;
+      }
 
-        {% endif %}
+      .result-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin-bottom: 12px;
+        text-align: center;
+        color: #145a2a;
+      }
 
-        {% if cond == 1 %}
-        <h1> plant Name : {{ plant }}</h1>
-        <h1> Plant Status :  {{ status }}</h1>
-        <h1> Disease Name : {{ diseases_name }}</h1>
+      .meta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px 28px;
+        justify-content: center;
+        font-size: 0.98rem;
+        margin-bottom: 12px;
+      }
 
-        {% endif %}
-        {% if cond == 2 %}
-            <h1>Plant Name :  {{ plant }}</h1>
-            <h1>Plant Status :  {{ status }}</h1>
-            <h1>Disease Name :  {{ diseases_name }}</h1>
-            <h2> Precautions : {{ disease_precautions }}</h2>
-        {% endif %}
+      .meta-label {
+        font-weight: 600;
+        color: #1b3a2b;
+      }
 
-        {% if cond == 3 %}
-            <h1>{{ error_msg }}</h1>
-        {% endif %}
+      .meta-value {
+        font-weight: 500;
+        text-transform: capitalize;
+      }
+
+      .disease-text {
+        font-size: 1rem;
+        margin-bottom: 8px;
+      }
+
+      .precautions-title {
+        font-size: 1.02rem;
+        font-weight: 600;
+        margin-top: 10px;
+        margin-bottom: 4px;
+      }
+
+      .precautions-body {
+        font-size: 0.98rem;
+        line-height: 1.6;
+      }
+
+      .error-text {
+        font-size: 1.05rem;
+        font-weight: 600;
+        text-align: center;
+        color: #b3261e;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="result-card">
+      {% if cond == 0 %}
+        <div class="result-title">Plant is Healthy</div>
+        <div class="meta-row">
+          <div><span class="meta-label">Plant:</span> <span class="meta-value">{{ plant }}</span></div>
+          <div><span class="meta-label">Status:</span> <span class="meta-value">{{ status }}</span></div>
+        </div>
+        <p class="disease-text">{{ diseases_name }}</p>
+
+      {% elif cond == 1 %}
+        <div class="result-title">Disease Not Trained</div>
+        <div class="meta-row">
+          <div><span class="meta-label">Plant:</span> <span class="meta-value">{{ plant }}</span></div>
+          <div><span class="meta-label">Status:</span> <span class="meta-value">{{ status }}</span></div>
+        </div>
+        <p class="error-text">Disease Name: {{ diseases_name }}</p>
+
+      {% elif cond == 2 %}
+        <div class="result-title">Disease Detected</div>
+        <div class="meta-row">
+          <div><span class="meta-label">Plant:</span> <span class="meta-value">{{ plant }}</span></div>
+          <div><span class="meta-label">Status:</span> <span class="meta-value">{{ status }}</span></div>
+        </div>
+        <p class="disease-text"><span class="meta-label">Disease:</span> <span class="meta-value">{{ diseases_name }}</span></p>
+        <div class="precautions-title">Recommended Precautions</div>
+        <div class="precautions-body">{{ disease_precautions }}</div>
+
+      {% elif cond == 3 %}
+        <div class="result-title">Unable to Analyse Image</div>
+        <p class="error-text">{{ error_msg }}</p>
+      {% endif %}
     </div>
-    </body>
+  </body>
 </html>

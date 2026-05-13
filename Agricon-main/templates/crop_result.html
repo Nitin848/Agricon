@@ -1,39 +1,78 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <title>Agricon</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
-        <script src="/static/scripts/cities.js"></script>
-        <style>
-            html,body{
-                width: 100%;
-                height: 100%;
-                margin: 0;
-                padding: 0;
-                overflow-x: hidden;
-          }
-            body{
-              background-image: url(static/images/farm_background.jpg);
-              background-repeat: no-repeat;
-              background-size: cover;
-              text-align: center;
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Agricon - Crop Result</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha2/dist/css/bootstrap.min.css">
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
 
-            }
-            .result{
-                text-align: center;
-                padding-top: 200px;
-                font-family: sans-serif;
-                color: black;
-            }
-        </style>
-    </head>
-    <body>
-    <div class="result">
-        <h1>you should grow {{ prediction_text }} in your farm</h1>
-        
+      body {
+        background:
+          linear-gradient(rgba(10, 26, 10, 0.55), rgba(10, 26, 10, 0.65)),
+          url(static/images/farm_background.jpg) center/cover no-repeat fixed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        font-family: "Segoe UI", Arial, sans-serif;
+      }
 
+      .result-card {
+        width: 100%;
+        max-width: 720px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(255, 255, 255, 0.55);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.25);
+        padding: 26px 24px;
+        text-align: center;
+      }
+
+      .result-title {
+        color: #145a2a;
+        font-weight: 800;
+        font-size: 1.25rem;
+        margin-bottom: 8px;
+      }
+
+      .result-body {
+        color: #0f3d20;
+        font-size: 1.05rem;
+      }
+
+      .crop-name {
+        font-weight: 700;
+        text-transform: capitalize;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 16px;
+        text-decoration: none;
+        color: #145a2a;
+        font-weight: 600;
+      }
+
+      .back-link:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="result-card">
+      <div class="result-title">Recommended Crop</div>
+      <div class="result-body">
+        You should grow <span class="crop-name">{{ prediction_text }}</span> in your farm.
+      </div>
+      <a class="back-link" href="{{ url_for('crop_recommend') }}">Go back to Crop form</a>
     </div>
-    </body>
+  </body>
 </html>

@@ -269,6 +269,12 @@ def home():
     return render_template('index.html')
 
 
+@app.route('/services')
+def services():
+    """Standalone “Our Services” cards page (also used if old links open card.html)."""
+    return render_template('card.html')
+
+
 @app.route('/crop_recommend')
 def crop_recommend():
     return render_template('crop.html')
