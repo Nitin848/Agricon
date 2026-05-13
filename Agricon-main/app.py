@@ -52,9 +52,12 @@ def get_tf():
     """Import TensorFlow only when disease routes run (smaller memory at boot for PaaS)."""
     global _tf_module
     if _tf_module is None:
-        import tensorflow as tf  # noqa: PLC0415
+        try:
+            import tensorflow as tf  # noqa: PLC0415
 
-        _tf_module = tf
+            _tf_module = tf
+        except ImportError:
+            _tf_module = None
     return _tf_module
 
 
@@ -155,6 +158,8 @@ fertilizer_dic = {
 
 def load_and_prep_image(filename, img_shape=224):
     tf = get_tf()
+    if tf is None:
+        raise RuntimeError("TensorFlow is not installed on this server.")
     img = tf.io.read_file(filename)
     img = tf.image.decode_image(img, channels=3)
     img = tf.image.resize(img, size=[img_shape, img_shape])
@@ -164,6 +169,8 @@ def load_and_prep_image(filename, img_shape=224):
 
 def pred_and_plot(model, filename, class_names):
     tf = get_tf()
+    if tf is None:
+        raise RuntimeError("TensorFlow is not installed on this server.")
     img = load_and_prep_image(filename)
     pred = model.predict(tf.expand_dims(img, axis=0))
     if len(pred[0]) > 1:
@@ -181,6 +188,8 @@ def resize_image(file_name):
 
 def diseases_prediction(file_name, model, class_names):
     tf = get_tf()
+    if tf is None:
+        raise RuntimeError("TensorFlow is not installed on this server.")
     image = tf.keras.preprocessing.image.load_img(file_name)
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])  # Convert single image to a batch.
@@ -246,6 +255,8 @@ def get_leaf_and_status_models():
     if not os.path.isfile(status_path) or not os.path.isfile(leaf_path):
         return None, None
     tf = get_tf()
+    if tf is None:
+        return None, None
     if _plant_status_model is None:
         _plant_status_model = tf.keras.models.load_model(status_path)
     if _leaf_id_model is None:
@@ -381,6 +392,13 @@ def disease_prediction():
             'disease_result.html',
             cond=3,
             error_msg='Please choose an image file.',
+        )
+
+    if get_tf() is None:
+        return render_template(
+            'disease_result.html',
+            cond=3,
+            error_msg='Disease prediction is disabled because TensorFlow is not installed on this server.',
         )
 
     model_status, model_leaf = get_leaf_and_status_models()
