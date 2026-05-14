@@ -107,9 +107,13 @@ Example response:
 
 ## Deploy (example: Render)
 
+**Do not** set a custom start command like `gunicorn Agricon-main.app:app` — Python cannot import a module named `Agricon-main` (hyphen). Either leave the start command blank so the `Procfile` is used, or point Gunicorn at `app:app` or `wsgi:app` as below.
+
 1. Push this repository to GitHub.
-2. Create a **Web Service** and set **Root Directory** to **`Agricon-main`** if the repo contains the parent `Agricon` folder.
-3. Build and start commands are inferred from `requirements.txt`, `runtime.txt`, and `Procfile` (`gunicorn`).
+2. Create a **Web Service** and choose **one** layout:
+   - **Root Directory** = **`Agricon-main`**: uses `Agricon-main/Procfile` → `gunicorn app:app`.
+   - **Root Directory** empty (repo root is the parent folder that contains `Agricon-main/`): uses the parent `Procfile` → `gunicorn wsgi:app` (see repo-root `wsgi.py`).
+3. Build uses `requirements.txt` and `runtime.txt` from the same directory as the selected root (repo root includes a small `requirements.txt` that pulls in `Agricon-main/requirements.txt`).
 4. Add environment variables as needed (`OPENWEATHER_API_KEY`, optional `AGRICON_CROP_MODEL`).
 
 TensorFlow is memory-heavy; free tiers may fail to build or boot. Use an instance with sufficient RAM if installs or first requests time out.
