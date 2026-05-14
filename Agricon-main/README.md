@@ -107,13 +107,18 @@ Example response:
 
 ## Deploy (example: Render)
 
-**Do not** set a custom start command like `gunicorn Agricon-main.app:app` — Python cannot import a module named `Agricon-main` (hyphen). Either leave the start command blank so the `Procfile` is used, or point Gunicorn at `app:app` or `wsgi:app` as below.
+**Do not** use `gunicorn Agricon-main.app:app` — Python cannot import a module named `Agricon-main` (hyphen).
+
+In the Render dashboard: **Settings → Build & Deploy → Start Command**. It must **not** contain `Agricon-main.app`. Either **clear the field completely** (so Render uses the `Procfile` from the root you selected) or set it explicitly to one of:
+
+- Repo root is the service root: `python run_gunicorn.py`
+- Repo root is `Agricon-main` only: `gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --threads 2 --timeout 180 --graceful-timeout 30`
 
 1. Push this repository to GitHub.
 2. Create a **Web Service** and choose **one** layout:
-   - **Root Directory** = **`Agricon-main`**: uses `Agricon-main/Procfile` → `gunicorn app:app`.
-   - **Root Directory** empty (repo root is the parent folder that contains `Agricon-main/`): uses the parent `Procfile` → `gunicorn wsgi:app` (see repo-root `wsgi.py`).
-3. Build uses `requirements.txt` and `runtime.txt` from the same directory as the selected root (repo root includes a small `requirements.txt` that pulls in `Agricon-main/requirements.txt`).
+   - **Root Directory** empty (parent folder that contains `Agricon-main/`): parent `Procfile` runs `python run_gunicorn.py` (uses `gunicorn --chdir Agricon-main app:app` internally). Repo root also has `wsgi.py` if you prefer `gunicorn wsgi:app`.
+   - **Root Directory** = **`Agricon-main`**: `Agricon-main/Procfile` → `gunicorn app:app`.
+3. Build uses `requirements.txt` and `runtime.txt` from the same directory as the selected root (repo root includes a small `requirements.txt` that pulls in `Agricon-main/requirements.txt`). Use **Python 3.11** (see `runtime.txt` / `.python-version` at repo root); 3.14 is not what this project is tested on. If Render still uses 3.14, add an environment variable **`PYTHON_VERSION`** = **`3.11.9`** (Render dashboard → Environment).
 4. Add environment variables as needed (`OPENWEATHER_API_KEY`, optional `AGRICON_CROP_MODEL`).
 
 TensorFlow is memory-heavy; free tiers may fail to build or boot. Use an instance with sufficient RAM if installs or first requests time out.
